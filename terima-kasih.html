@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terima Kasih - Panti Wreda Assalam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        'primary-dark': '#059669',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <main class="flex flex-col items-center justify-center min-h-screen text-center px-6">
+        <div class="max-w-xl">
+            <svg class="w-24 h-24 text-primary mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <h1 class="text-4xl font-bold text-gray-800">Terima Kasih!</h1>
+            <p id="message" class="text-lg text-gray-600 mt-4">Donasi Anda telah berhasil diproses. Kami sangat menghargai kebaikan hati Anda. Sebuah email konfirmasi (simulasi) telah dikirimkan ke alamat email Anda.</p>
+            <div id="donation-details" class="mt-6 text-left bg-white p-4 rounded-lg border">
+                <p>Memuat detail donasi...</p>
+            </div>
+            <a href="landing-page.html" class="inline-block mt-8 bg-primary text-white px-8 py-3 rounded-full font-semibold hover:bg-primary-dark">Kembali ke Beranda</a>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const externalId = params.get('external_id');
+            const detailsContainer = document.getElementById('donation-details');
+            const messageEl = document.getElementById('message');
+
+            if (!externalId) {
+                messageEl.textContent = "Terima kasih atas kunjungan Anda.";
+                detailsContainer.style.display = 'none';
+                return;
+            }
+
+            try {
+                // Halaman ini sekarang hanya mengambil data, tidak lagi menulis ke database
+                const response = await fetch(`http://localhost:3000/get-invoice?id=${externalId}`);
+                if (!response.ok) throw new Error('Gagal mengambil detail dari server.');
+
+                const invoice = await response.json();
+                
+                detailsContainer.innerHTML = `
+                    <p><strong>ID Transaksi:</strong> ${invoice.external_id}</p>
+                    <p><strong>Jumlah Donasi:</strong> Rp ${invoice.amount.toLocaleString('id-ID')}</p>
+                    <p><strong>Donatur:</strong> ${invoice.payer_email}</p>
+                `;
+
+            } catch (error) {
+                console.error("Error displaying donation details:", error);
+                
+                // PERBAIKAN TOTAL: Membangun elemen pesan error secara manual untuk menghindari error sintaks
+                detailsContainer.innerHTML = ''; // Kosongkan kontainer
+                
+                const errorParagraph = document.createElement('p');
+                errorParagraph.className = 'text-red-500';
+                errorParagraph.textContent = `Gagal memuat detail donasi: ${error.message}`;
+                
+                detailsContainer.appendChild(errorParagraph);
+            }
+        });
+    </script>
+</body>
+</html>
+

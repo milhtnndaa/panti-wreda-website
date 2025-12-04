@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Tentang Kami - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        .note-editor.note-frame { margin-bottom: 1rem; border-radius: 0.5rem; }
+
+        /* CSS BARU DITAMBAHKAN DI SINI */
+        .megamendung-background {
+            background-image: url('10199570.jpg'); /* Pastikan file ini ada di folder yang sama */
+            background-repeat: repeat;
+            background-size: 250px auto;
+            background-attachment: fixed;
+            opacity: 0.1;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #ECFDF5; /* Mengganti bg-gray-100 */
+        }
+        /* AKHIR DARI CSS BARU */
+
+    </style>
+</head>
+
+<body class="bg-gray-100 relative">
+
+    <div class="megamendung-background"></div>
+
+    <header class="bg-white shadow-md relative z-10">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">Kelola Halaman "Tentang Kami"</h1>
+            <a href="admin.html" class="text-sm font-semibold text-emerald-400 hover:underline">&larr; Kembali ke Dashboard</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 relative z-10">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <form id="form-tentangkami" class="space-y-6">
+                <div>
+                    <label for="ringkasan-editor" class="block text-lg font-semibold text-gray-700 mb-2">Ringkasan Singkat (untuk Halaman Utama)</label>
+                    <textarea id="ringkasan-editor" name="ringkasan" required></textarea>
+                </div>
+                <hr>
+                <div>
+                    <label for="sejarah-editor" class="block text-lg font-semibold text-gray-700 mb-2">Sejarah Singkat (Halaman Detail)</label>
+                    <textarea id="sejarah-editor" name="sejarah"></textarea>
+                </div>
+                 <div>
+                    <label for="visimisi-editor" class="block text-lg font-semibold text-gray-700 mb-2">Visi & Misi (Halaman Detail)</label>
+                    <textarea id="visimisi-editor" name="visimisi"></textarea>
+                </div>
+                 <div>
+                    <label for="gambar-tentangkami" class="block text-lg font-semibold text-gray-700 mb-2">Foto Halaman "Tentang Kami"</label>
+                    <input type="file" id="gambar-tentangkami" class="mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50" accept="image/png, image/jpeg">
+                    <img id="gambar-preview" src="" class="hidden w-48 h-auto mt-4 rounded shadow-md">
+                    <p class="text-xs text-gray-500 mt-1">Kosongkan jika tidak ingin mengubah gambar.</p>
+                </div>
+                <button type="submit" id="submit-btn" class="w-full px-4 py-3 font-semibold text-white bg-emerald-400 rounded-lg hover:bg-emerald-600 disabled:bg-gray-400">Simpan Perubahan</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCN5vDFv2vHHwIDN6aLezQcsDSyIEvdWpM",
+  authDomain: "wreda-assalam.firebaseapp.com",
+  projectId: "wreda-assalam",
+  storageBucket: "wreda-assalam.firebasestorage.app",
+  messagingSenderId: "1051904934369",
+  appId: "1:1051904934369:web:2047f406dad5d1958fd2a0",
+  measurementId: "G-S2L0JK0J98"
+};
+
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) { window.location.replace('admin.html'); }
+        });
+
+        const editorConfig = {
+            placeholder: 'Tulis konten di sini...', tabsize: 2, height: 200,
+            toolbar: [['style', ['bold', 'italic', 'underline']],['para', ['ul', 'ol', 'paragraph']]]
+        };
+        $('#ringkasan-editor').summernote(editorConfig);
+        $('#sejarah-editor').summernote(editorConfig);
+        $('#visimisi-editor').summernote(editorConfig);
+
+        const form = document.getElementById('form-tentangkami');
+        const submitButton = document.getElementById('submit-btn');
+        const gambarPreview = document.getElementById('gambar-preview');
+        const gambarInput = document.getElementById('gambar-tentangkami');
+        const docRef = doc(db, "profilPanti", "kontenUtama"); 
+        let currentImageUrl = ''; // Menyimpan URL gambar yang ada
+
+        async function loadContent() {
+            try {
+                submitButton.textContent = 'Memuat...';
+                submitButton.disabled = true;
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    $('#ringkasan-editor').summernote('code', data.ringkasan || '');
+                    $('#sejarah-editor').summernote('code', data.sejarah || '');
+                    $('#visimisi-editor').summernote('code', data.visimisi || '');
+                    if (data.gambarUrl) {
+                        currentImageUrl = data.gambarUrl;
+                        gambarPreview.src = data.gambarUrl;
+                        gambarPreview.classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error("Gagal memuat konten:", error);
+                alert("Gagal memuat konten dari database.");
+            } finally {
+                submitButton.textContent = 'Simpan Perubahan';
+                submitButton.disabled = false;
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitButton.textContent = 'Menyimpan...';
+            submitButton.disabled = true;
+
+            const dataToSave = {
+                ringkasan: $('#ringkasan-editor').summernote('code'),
+                sejarah: $('#sejarah-editor').summernote('code'),
+                visimisi: $('#visimisi-editor').summernote('code')
+            };
+
+            const file = gambarInput.files[0];
+
+            const saveToFirestore = async (imageUrl) => {
+                dataToSave.gambarUrl = imageUrl;
+                try {
+                    await setDoc(docRef, dataToSave, { merge: true });
+                    alert('Konten "Tentang Kami" berhasil diperbarui!');
+                } catch (error) {
+                    console.error("Gagal menyimpan konten:", error);
+                    alert("Gagal menyimpan perubahan.");
+                } finally {
+                    submitButton.textContent = 'Simpan Perubahan';
+                    submitButton.disabled = false;
+                }
+            };
+
+            if (file) { // Jika ada file baru yang diunggah
+                const storagePath = `profil/${Date.now()}_${file.name}`;
+                const storageRef = ref(storage, storagePath);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        submitButton.textContent = `Mengunggah... ${Math.round(progress)}%`;
+                    }, 
+                    (error) => {
+                        console.error("Upload gagal:", error);
+                        alert("Gagal mengunggah gambar.");
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Simpan Perubahan';
+                    }, 
+                    () => {
+                        getDownloadURL(uploadTask.snapshot.ref).then(saveToFirestore);
+                    }
+                );
+            } else { // Jika tidak ada file baru, simpan data teks dengan URL gambar yang lama
+                saveToFirestore(currentImageUrl);
+            }
+        });
+        
+        loadContent();
+    </script>
+</body>
+</html>

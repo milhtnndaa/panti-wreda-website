@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Laporan - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        'primary-dark': '#059669',
+                    }
+                }
+            }
+        }
+    </script>
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        .modal { display: none; }
+        .modal.flex { display: flex; }
+
+        /* CSS BARU DITAMBAHKAN DI SINI */
+        .megamendung-background {
+            background-image: url('10199570.jpg'); /* Pastikan file ini ada di folder yang sama */
+            background-repeat: repeat;
+            background-size: 250px auto;
+            background-attachment: fixed;
+            opacity: 0.1;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #ECFDF5; /* Mengganti bg-gray-100 */
+        }
+        /* AKHIR DARI CSS BARU */
+
+    </style>
+</head>
+
+<body class="bg-gray-100 relative">
+
+    <div class="megamendung-background"></div>
+
+    <header class="bg-white shadow-md relative z-10">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">Kelola Laporan Bulanan</h1>
+            <a href="admin.html" class="text-sm font-semibold text-emerald-600 hover:underline">&larr; Kembali ke Dashboard</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 relative z-10">
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-lg font-semibold mb-4">Buat Laporan Baru</h2>
+            <form id="form-laporan-bulanan" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label for="laporan-bulan-tahun" class="block text-sm font-medium text-gray-700">Bulan & Tahun</label>
+                    <input type="month" id="laporan-bulan-tahun" class="mt-1 w-full px-4 py-2 border rounded-lg focus:ring-primary focus:border-primary" required>
+                </div>
+                <div>
+                    <label for="laporan-target" class="block text-sm font-medium text-gray-700">Target Donasi (Rp)</label>
+                    <input type="text" id="laporan-target" placeholder="Contoh: 25.000.000" class="mt-1 w-full px-4 py-2 border rounded-lg focus:ring-primary focus:border-primary" required>
+                </div>
+                <button type="submit" class="w-full px-4 py-2 font-semibold text-white bg-primary rounded-lg hover:bg-primary-dark">Buat Laporan</button>
+            </form>
+        </div>
+        <div id="daftar-laporan-container" class="bg-white p-6 rounded-lg shadow-md">
+             <h2 class="text-lg font-semibold mb-4">Daftar Laporan</h2>
+             <div id="daftar-laporan" class="space-y-2">Memuat daftar laporan...</div>
+        </div>
+    </main>
+
+    <div id="edit-laporan-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+            <h3 class="text-xl font-bold mb-4">Edit Laporan Bulanan</h3>
+            <form id="form-edit-laporan" class="space-y-4">
+                <input type="hidden" id="edit-laporan-id">
+                <div>
+                    <label for="edit-laporan-bulan-tahun" class="block text-sm font-medium text-gray-700">Bulan & Tahun</label>
+                    <input type="month" id="edit-laporan-bulan-tahun" class="mt-1 w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                <div>
+                    <label for="edit-laporan-target" class="block text-sm font-medium text-gray-700">Target Donasi (Rp)</label>
+                    <input type="text" id="edit-laporan-target" placeholder="Target Donasi (Rp)" class="mt-1 w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                <div class="flex justify-end space-x-2 pt-4">
+                    <button type="button" id="cancel-edit-laporan" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, deleteDoc, serverTimestamp, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+  apiKey: "AIzaSyCN5vDFv2vHHwIDN6aLezQcsDSyIEvdWpM",
+  authDomain: "wreda-assalam.firebaseapp.com",
+  projectId: "wreda-assalam",
+  storageBucket: "wreda-assalam.firebasestorage.app",
+  messagingSenderId: "1051904934369",
+  appId: "1:1051904934369:web:2047f406dad5d1958fd2a0",
+  measurementId: "G-S2L0JK0J98"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- AUTH GUARD ---
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                // Jika tidak ada user, redirect ke halaman login utama
+                window.location.replace('admin.html');
+            }
+        });
+
+        // --- FORMAT RUPIAH ---
+        const formatRupiah = (angka, prefix = '') => {
+            if(isNaN(angka)) return prefix + '0';
+            let number_string = String(angka).replace(/[^,\d]/g, '').toString();
+            let sisa = number_string.length % 3;
+            let rupiah = number_string.substr(0, sisa);
+            let ribuan = number_string.substr(sisa).match(/\d{3}/gi);
+            if (ribuan) {
+                let separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+            return prefix + rupiah;
+        };
+        
+        const parseRupiah = (rupiahString) => {
+            return parseInt(rupiahString.replace(/[^0-9]/g, '')) || 0;
+        };
+        
+        const targetInput = document.getElementById('laporan-target');
+        const editTargetInput = document.getElementById('edit-laporan-target');
+        
+        targetInput.addEventListener('input', (e) => {
+             e.target.value = formatRupiah(parseRupiah(e.target.value), 'Rp ');
+        });
+        editTargetInput.addEventListener('input', (e) => {
+             e.target.value = formatRupiah(parseRupiah(e.target.value), 'Rp ');
+        });
+
+
+        // --- DOM ELEMENTS ---
+        const formLaporanBulanan = document.getElementById('form-laporan-bulanan');
+        const daftarLaporanContainer = document.getElementById('daftar-laporan');
+        const editLaporanModal = document.getElementById('edit-laporan-modal');
+        const formEditLaporan = document.getElementById('form-edit-laporan');
+
+        // --- CRUD FUNCTIONS ---
+        async function loadDaftarLaporan() {
+            daftarLaporanContainer.innerHTML = 'Memuat...';
+            const q = query(collection(db, "laporanBulanan"), orderBy("createdAt", "desc"));
+            const snapshot = await getDocs(q);
+            daftarLaporanContainer.innerHTML = snapshot.empty ? '<p class="text-gray-500">Belum ada laporan.</p>' : '';
+            
+            const table = document.createElement('table');
+            table.className = 'w-full text-left';
+            table.innerHTML = `
+                <thead class="border-b-2">
+                    <tr>
+                        <th class="py-2 px-4">Bulan & Tahun</th>
+                        <th class="py-2 px-4">Target</th>
+                        <th class="py-2 px-4 text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>`;
+            const tbody = table.querySelector('tbody');
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const tr = document.createElement('tr');
+                tr.className = 'border-b';
+                tr.innerHTML = `
+                    <td class="py-2 px-4">${data.bulanTahun}</td>
+                    <td class="py-2 px-4">${formatRupiah(data.target, 'Rp ')}</td>
+                    <td class="py-2 px-4 text-right">
+                        <button class="edit-laporan-btn text-blue-500 hover:underline mr-2" data-id="${doc.id}">Edit</button>
+                        <button class="hapus-laporan-btn text-red-500 hover:underline" data-id="${doc.id}">Hapus</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+            daftarLaporanContainer.appendChild(table);
+
+            document.querySelectorAll('.edit-laporan-btn').forEach(btn => btn.addEventListener('click', (e) => openEditLaporanModal(e.target.dataset.id)));
+            document.querySelectorAll('.hapus-laporan-btn').forEach(btn => btn.addEventListener('click', (e) => hapusLaporan(e.target.dataset.id)));
+        }
+
+        formLaporanBulanan.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bulanTahunInput = document.getElementById('laporan-bulan-tahun').value;
+            const target = parseRupiah(document.getElementById('laporan-target').value);
+            const date = new Date(bulanTahunInput + '-02');
+            const bulanTahunText = date.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+
+            // 🔧 Perbaikan di sini:
+            await addDoc(collection(db, "laporanBulanan"), { 
+                bulanTahun: bulanTahunText, 
+                target: target, 
+                createdAt: serverTimestamp() 
+            });
+
+            alert('Laporan baru berhasil dibuat!');
+            formLaporanBulanan.reset();
+            loadDaftarLaporan();
+        });
+
+
+        async function openEditLaporanModal(id) {
+            const docRef = doc(db, "laporanBulanan", id);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('edit-laporan-id').value = id;
+                const date = new Date(data.createdAt.toDate());
+                document.getElementById('edit-laporan-bulan-tahun').value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                document.getElementById('edit-laporan-target').value = formatRupiah(data.target, 'Rp ');
+                editLaporanModal.classList.add('flex');
+            }
+        }
+
+        formEditLaporan.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-laporan-id').value;
+            const bulanTahunInput = document.getElementById('edit-laporan-bulan-tahun').value;
+            const target = parseRupiah(document.getElementById('edit-laporan-target').value);
+            const date = new Date(bulanTahunInput + '-02');
+            const bulanTahunText = date.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+            
+            await setDoc(doc(db, "laporanBulanan", id), { bulanTahun: bulanTahunText, target }, { merge: true });
+            alert('Laporan berhasil diperbarui!');
+            editLaporanModal.classList.remove('flex');
+            loadDaftarLaporan();
+        });
+
+        document.getElementById('cancel-edit-laporan').addEventListener('click', () => editLaporanModal.classList.remove('flex'));
+
+        async function hapusLaporan(id) {
+            if (confirm("Yakin ingin menghapus laporan ini? Seluruh transaksi terkait juga akan terhapus.")) {
+                // Hapus semua transaksi terkait
+                const q = query(collection(db, "transaksi"), where("laporanId", "==", id));
+                const snapshot = await getDocs(q);
+                snapshot.forEach(async (doc) => await deleteDoc(doc.ref));
+                
+                // Hapus laporan itu sendiri
+                await deleteDoc(doc(db, "laporanBulanan", id));
+                alert("Laporan dan transaksi terkait berhasil dihapus.");
+                loadDaftarLaporan();
+            }
+        }
+
+        // --- INITIAL LOAD ---
+        loadDaftarLaporan();
+    </script>
+</body>
+</html>

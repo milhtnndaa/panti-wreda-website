@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Galeri - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+
+        /* CSS BARU DITAMBAHKAN DI SINI */
+        .megamendung-background {
+            background-image: url('10199570.jpg'); /* Pastikan file ini ada di folder yang sama */
+            background-repeat: repeat;
+            background-size: 250px auto;
+            background-attachment: fixed;
+            opacity: 0.1;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #ECFDF5; /* Mengganti bg-gray-100 */
+        }
+        /* AKHIR DARI CSS BARU */
+
+    </style>
+</head>
+
+<body class="bg-gray-100 relative">
+
+    <div class="megamendung-background"></div>
+
+    <header class="bg-white shadow-md relative z-10">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">Kelola Galeri</h1>
+            <a href="admin.html" class="text-sm font-semibold text-emerald-600 hover:underline">&larr; Kembali ke Dashboard</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 relative z-10">
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-lg font-semibold mb-4">Unggah Foto Baru</h2>
+            <form id="form-galeri" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div class="md:col-span-2">
+                    <label for="galeri-deskripsi" class="block text-sm font-medium text-gray-700">Deskripsi (Opsional)</label>
+                    <input type="text" id="galeri-deskripsi" placeholder="Contoh: Kegiatan senam pagi" class="mt-1 w-full px-4 py-2 border rounded-lg">
+                </div>
+                <div>
+                     <label for="galeri-gambar" class="block text-sm font-medium text-gray-700">Pilih File Gambar</label>
+                    <input type="file" id="galeri-gambar" class="mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50" accept="image/png, image/jpeg" required>
+                </div>
+                <button type="submit" id="submit-galeri" class="md:col-span-3 w-full px-4 py-2 font-semibold text-white bg-emerald-400 rounded-lg hover:bg-emerald-600 disabled:bg-gray-400">Unggah Foto</button>
+            </form>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+             <h2 class="text-lg font-semibold mb-4">Daftar Foto di Galeri</h2>
+             <div id="daftar-galeri" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <p id="loading-galeri" class="col-span-full text-center text-gray-500">Memuat daftar foto...</p>
+             </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-storage.js";
+
+        const firebaseConfig = {
+  apiKey: "AIzaSyCN5vDFv2vHHwIDN6aLezQcsDSyIEvdWpM",
+  authDomain: "wreda-assalam.firebaseapp.com",
+  projectId: "wreda-assalam",
+  storageBucket: "wreda-assalam.firebasestorage.app",
+  messagingSenderId: "1051904934369",
+  appId: "1:1051904934369:web:2047f406dad5d1958fd2a0",
+  measurementId: "G-S2L0JK0J98"
+};
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.replace('admin.html');
+            }
+        });
+
+        const formGaleri = document.getElementById('form-galeri');
+        const daftarGaleriContainer = document.getElementById('daftar-galeri');
+        const submitButton = document.getElementById('submit-galeri');
+        const deskripsiInput = document.getElementById('galeri-deskripsi');
+        const gambarInput = document.getElementById('galeri-gambar');
+
+        async function loadDaftarGaleri() {
+            daftarGaleriContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">Memuat...</p>';
+            const q = query(collection(db, "galeri"), orderBy("createdAt", "desc"));
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.empty) {
+                daftarGaleriContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">Belum ada foto di galeri.</p>';
+                return;
+            }
+            
+            daftarGaleriContainer.innerHTML = '';
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const wrapper = document.createElement('div');
+                wrapper.className = 'relative group';
+
+                const img = document.createElement('img');
+                img.src = data.url;
+                img.className = 'w-full h-40 object-cover rounded-lg shadow-md';
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity';
+                deleteBtn.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+                deleteBtn.addEventListener('click', () => hapusFoto(doc.id, data.url));
+                
+                wrapper.appendChild(img);
+                wrapper.appendChild(deleteBtn);
+                daftarGaleriContainer.appendChild(wrapper);
+            });
+        }
+
+        async function hapusFoto(id, url) {
+            if (confirm("Yakin ingin menghapus foto ini?")) {
+                try {
+                    // Hapus dari Storage
+                    const storageRef = ref(storage, url);
+                    await deleteObject(storageRef).catch(err => {
+                        if (err.code !== 'storage/object-not-found') {
+                            console.error("Gagal hapus gambar di storage:", err);
+                        }
+                    });
+                    
+                    // Hapus dari Firestore
+                    await deleteDoc(doc(db, "galeri", id));
+                    
+                    alert("Foto berhasil dihapus.");
+                    loadDaftarGaleri();
+                } catch (error) {
+                    console.error("Gagal menghapus foto:", error);
+                    alert("Terjadi kesalahan saat menghapus foto.");
+                }
+            }
+        }
+
+        formGaleri.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = gambarInput.files[0];
+            if (!file) {
+                alert('Silakan pilih file gambar terlebih dahulu.');
+                return;
+            }
+
+            submitButton.disabled = true;
+
+            const storagePath = `galeri/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, storagePath);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    submitButton.textContent = `Mengunggah... ${Math.round(progress)}%`;
+                }, 
+                (error) => {
+                    console.error("Upload gagal:", error);
+                    alert("Gagal mengunggah gambar.");
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Unggah Foto';
+                }, 
+                () => {
+                    getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+                        try {
+                            await addDoc(collection(db, "galeri"), {
+                                url: downloadURL,
+                                deskripsi: deskripsiInput.value,
+                                createdAt: serverTimestamp()
+                            });
+                            alert('Foto berhasil diunggah!');
+                            formGaleri.reset();
+                            loadDaftarGaleri();
+                        } catch (error) {
+                            console.error("Gagal menyimpan ke Firestore:", error);
+                            alert("Gagal menyimpan data foto.");
+                        } finally {
+                            submitButton.disabled = false;
+                            submitButton.textContent = 'Unggah Foto';
+                        }
+                    });
+                }
+            );
+        });
+
+        loadDaftarGaleri();
+    </script>
+</body>
+</html>

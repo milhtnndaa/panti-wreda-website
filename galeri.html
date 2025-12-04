@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galeri - Panti Wreda Assalam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        'primary-dark': '#059669',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .modal {
+            display: none;
+            background-color: rgba(0,0,0,0.8);
+            transition: opacity 0.3s ease;
+        }
+        .modal.flex {
+            display: flex;
+        }
+        .modal-content {
+            max-width: 90vw;
+            max-height: 80vh;
+        }
+
+        /* CSS BARU DITAMBAHKAN DI SINI */
+        body { font-family: 'Inter', sans-serif; } 
+
+        .megamendung-background {
+            background-image: url('10199570.jpg'); /* Pastikan file ini ada di folder yang sama */
+            background-repeat: repeat;
+            background-size: 250px auto;
+            background-attachment: fixed;
+            opacity: 0.1;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #ECFDF5; /* Anda bisa ganti ini ke bg-gray-50 jika mau */
+        }
+        /* AKHIR DARI CSS BARU */
+
+    </style>
+</head>
+
+<body class="bg-gray-50 relative">
+
+    <div class="megamendung-background"></div>
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="landing-page.html" class="text-xl font-bold text-primary">Panti Wreda Assalam</a>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="landing-page.html#beranda" class="text-gray-600 hover:text-primary">Beranda</a>
+                <a href="tentang-kami.html" class="text-gray-600 hover:text-primary">Tentang Kami</a>
+                <a href="laporan-rinci.html" class="text-gray-600 hover:text-primary">Laporan Donasi</a>
+                <a href="berita.html" class="text-gray-600 hover:text-primary">Berita</a>
+                <a href="galeri.html" class="text-primary font-bold">Galeri</a>
+                <a href="landing-page.html#kontak" class="text-gray-600 hover:text-primary">Kontak</a>
+            </div>
+            <a href="landing-page.html#donasi" class="hidden md:block bg-primary text-white px-5 py-2 rounded-full font-semibold hover:bg-primary-dark">Donasi Sekarang</a>
+        </nav>
+    </header>
+
+    <main class="relative z-10 container mx-auto px-6 py-12">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800">Galeri Momen Bahagia</h1>
+            <p class="text-lg text-gray-600 mt-2 max-w-2xl mx-auto">Potret kehangatan, kebersamaan, dan senyum tulus dari para penghuni Panti Wreda Assalam.</p>
+        </div>
+
+        <div id="gallery-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <p id="loading-gallery" class="col-span-full text-center text-gray-500">Memuat galeri...</p>
+        </div>
+    </main>
+
+    <div id="gallery-modal" class="modal fixed inset-0 z-50 items-center justify-center">
+        <button id="close-modal" class="absolute top-4 right-6 text-white text-4xl font-bold">&times;</button>
+        <button id="prev-image" class="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-30 rounded-full p-2 text-3xl">&#10094;</button>
+
+        <button id="next-image" class="absolute right-4 md:right-10 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-30 rounded-full p-2 text-3xl">&#10095;</button>
+        
+        <div class="relative">
+            <img id="modal-image" src="" alt="Tampilan Gambar Diperbesar" class="modal-content object-contain">
+            <p id="modal-caption" class="text-center text-white mt-2"></p>
+        </div>
+    </div>
+
+    <footer class="relative z-10 bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 Panti Wreda Assalam. Semua Hak Cipta Dilindungi.</p>
+        </div>
+    </footer>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+  apiKey: "AIzaSyCN5vDFv2vHHwIDN6aLezQcsDSyIEvdWpM",
+  authDomain: "wreda-assalam.firebaseapp.com",
+  projectId: "wreda-assalam",
+  storageBucket: "wreda-assalam.firebasestorage.app",
+  messagingSenderId: "1051904934369",
+  appId: "1:1051904934369:web:2047f406dad5d1958fd2a0",
+  measurementId: "G-S2L0JK0J98"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const galleryContainer = document.getElementById('gallery-container');
+        const loadingEl = document.getElementById('loading-gallery');
+        const modal = document.getElementById('gallery-modal');
+        const modalImage = document.getElementById('modal-image');
+        const modalCaption = document.getElementById('modal-caption');
+        const closeModalBtn = document.getElementById('close-modal');
+        const prevBtn = document.getElementById('prev-image');
+        const nextBtn = document.getElementById('next-image');
+
+        let galleryImages = [];
+        let currentIndex = 0;
+
+        function showImage(index) {
+            if (index >= 0 && index < galleryImages.length) {
+                currentIndex = index;
+                modalImage.src = galleryImages[index].url;
+                modalCaption.textContent = galleryImages[index].deskripsi || '';
+            }
+        }
+
+        async function loadGallery() {
+            try {
+                const q = query(collection(db, "galeri"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    loadingEl.textContent = 'Belum ada foto di galeri.';
+                    return;
+                }
+                
+                loadingEl.remove();
+
+                querySnapshot.forEach((doc, index) => {
+                    const data = doc.data();
+                    galleryImages.push(data); // Simpan data gambar ke array
+
+                    const imgWrapper = document.createElement('div');
+                    imgWrapper.className = 'w-full h-64 bg-gray-200 rounded-lg overflow-hidden shadow-md group relative cursor-pointer';
+                    imgWrapper.dataset.index = index; // Tambahkan index untuk identifikasi
+                    imgWrapper.innerHTML = `
+                        <img src="${data.url}" onerror="this.onerror=null;this.src='https://placehold.co/400x400/ccc/999?text=Gagal+Muat';" alt="${data.deskripsi || 'Foto Galeri'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        ${data.deskripsi ? `<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 truncate">${data.deskripsi}</div>` : ''}
+                    `;
+                    galleryContainer.appendChild(imgWrapper);
+
+                    imgWrapper.addEventListener('click', () => {
+                        modal.classList.add('flex');
+                        showImage(index);
+                    });
+                });
+
+            } catch (error) {
+                console.error("Error loading gallery:", error);
+                loadingEl.textContent = 'Gagal memuat galeri.';
+                loadingEl.classList.add('text-red-500');
+            }
+        }
+        
+        // Event Listeners untuk Modal
+        closeModalBtn.addEventListener('click', () => modal.classList.remove('flex'));
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('flex');
+            }
+        });
+        prevBtn.addEventListener('click', () => {
+            const newIndex = (currentIndex - 1 + galleryImages.length) % galleryImages.length;
+            showImage(newIndex);
+        });
+        nextBtn.addEventListener('click', () => {
+            const newIndex = (currentIndex + 1) % galleryImages.length;
+            showImage(newIndex);
+        });
+        
+        loadGallery();
+    </script>
+</body>
+</html>

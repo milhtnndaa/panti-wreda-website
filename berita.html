@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berita & Kegiatan - Panti Wreda Assalam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        'primary-dark': '#059669',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; } 
+
+        /* Pola Mega Mendung dari file sebelumnya */
+        .megamendung-background {
+            background-image: url('10199570.jpg'); /* Pastikan file ini ada di folder yang sama */
+            background-repeat: repeat;
+            background-size: 250px auto;
+            background-attachment: fixed;
+            opacity: 0.1;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #ECFDF5; /* Anda bisa ganti ini ke bg-gray-50 jika mau */
+        }
+
+        /* Overlay untuk section-section tertentu */
+        .content-section-bg {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(2px);
+        }
+    </style>
+    </head>
+
+<body class="bg-gray-50 relative">
+
+    <div class="megamendung-background"></div>
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="landing-page.html" class="text-xl font-bold text-primary">Panti Wreda Assalam</a>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="landing-page.html#beranda" class="text-gray-600 hover:text-primary">Beranda</a>
+                <a href="tentang-kami.html" class="text-gray-600 hover:text-primary">Tentang Kami</a>
+                <a href="laporan-rinci.html" class="text-gray-600 hover:text-primary">Laporan Donasi</a>
+                <a href="berita.html" class="text-primary font-bold">Berita</a>
+                <a href="galeri.html" class="text-gray-600 hover:text-primary">Galeri</a>
+                <a href="landing-page.html#kontak" class="text-gray-600 hover:text-primary">Kontak</a>
+            </div>
+            <a href="landing-page.html#donasi" class="hidden md:block bg-primary text-white px-5 py-2 rounded-full font-semibold hover:bg-primary-dark">Donasi Sekarang</a>
+        </nav>
+    </header>
+
+    <main class="relative z-10 container mx-auto px-6 py-12">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800">Berita & Kegiatan Panti</h1>
+            <p class="text-lg text-gray-600 mt-2 max-w-2xl mx-auto">Ikuti terus kabar dan kegiatan terbaru dari para penghuni Panti Wreda Assalam.</p>
+        </div>
+
+        <div id="berita-list-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <p id="loading-berita" class="col-span-full text-center text-gray-500">Memuat semua berita...</p>
+        </div>
+    </main>
+
+    <footer class="relative z-10 bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 Panti Wreda Assalam. Semua Hak Cipta Dilindungi.</p>
+        </div>
+    </footer>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+  apiKey: "AIzaSyCN5vDFv2vHHwIDN6aLezQcsDSyIEvdWpM",
+  authDomain: "wreda-assalam.firebaseapp.com",
+  projectId: "wreda-assalam",
+  storageBucket: "wreda-assalam.firebasestorage.app",
+  messagingSenderId: "1051904934369",
+  appId: "1:1051904934369:web:2047f406dad5d1958fd2a0",
+  measurementId: "G-S2L0JK0J98"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const beritaContainer = document.getElementById('berita-list-container');
+        const loadingEl = document.getElementById('loading-berita');
+
+        async function loadAllBerita() {
+            try {
+                const q = query(collection(db, "berita"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    loadingEl.textContent = 'Belum ada berita yang dipublikasikan.';
+                    return;
+                }
+                
+                loadingEl.remove();
+
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const ringkasan = data.isiLengkap.replace(/<[^>]+>/g, '').substring(0, 100) + '...';
+                    const beritaCard = document.createElement('div');
+
+                    // KELAS CSS DIPERBARUI DI SINI (content-section-bg)
+                    beritaCard.className = 'bg-white rounded-lg shadow-lg overflow-hidden flex flex-col content-section-bg';
+                    
+                    beritaCard.innerHTML = `
+                        <img src="${data.gambarUrl}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/ccc/999?text=Gagal+Muat';" alt="${data.judul}" class="w-full h-56 object-cover">
+                        <div class="p-6 flex flex-col flex-grow">
+                            <p class="text-sm text-gray-500 mb-2">${data.tanggal}</p>
+                            <h3 class="font-bold text-xl mb-3 flex-grow">${data.judul}</h3>
+                            <p class="text-gray-600 text-base mb-4">${ringkasan}</p>
+                            <a href="detail-berita.html?id=${doc.id}" class="text-primary font-semibold hover:underline mt-auto">Baca selengkapnya &rarr;</a>
+                        </div>
+                    `;
+                    beritaContainer.appendChild(beritaCard);
+                });
+
+            } catch (error) {
+                console.error("Error loading all berita:", error);
+                loadingEl.textContent = 'Gagal memuat berita. Pastikan sudah membuat indeks di Firebase.';
+                loadingEl.classList.add('text-red-500');
+            }
+        }
+        
+        loadAllBerita();
+    </script>
+</body>
+</html>

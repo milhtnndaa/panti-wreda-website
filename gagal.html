@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donasi Gagal - Panti Wreda Assalam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        'primary-dark': '#059669',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <main class="flex flex-col items-center justify-center min-h-screen text-center px-6">
+        <div class="max-w-xl">
+            <svg class="w-24 h-24 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <h1 class="text-4xl font-bold text-gray-800">Donasi Dibatalkan</h1>
+            <p class="text-lg text-gray-600 mt-4">Sepertinya Anda telah membatalkan proses donasi. Tidak apa-apa, Anda selalu bisa kembali untuk memberikan dukungan kapan pun.</p>
+            <a href="landing-page.html#donasi" class="inline-block mt-8 bg-primary text-white px-8 py-3 rounded-full font-semibold hover:bg-primary-dark">Coba Donasi Lagi</a>
+        </div>
+    </main>
+</body>
+</html>
+

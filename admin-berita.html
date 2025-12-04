@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Berita - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        .note-editor.note-frame { margin-bottom: 1rem; border-radius: 0.5rem; }
+
+        /* CSS BARU DITAMBAHKAN DI SINI */
+        .megamendung-background {
+            background-image: url('10199570.jpg'); /* Pastikan file ini ada di folder yang sama */
+            background-repeat: repeat;
+            background-size: 250px auto;
+            background-attachment: fixed;
+            opacity: 0.1;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #ECFDF5; /* Mengganti bg-gray-100 */
+        }
+        /* AKHIR DARI CSS BARU */
+
+    </style>
+</head>
+
+<body class="bg-gray-100 relative">
+
+    <div class="megamendung-background"></div>
+
+    <header class="bg-white shadow-md relative z-10">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">Kelola Berita</h1>
+            <a href="admin.html" class="text-sm font-semibold text-emerald-600 hover:underline">&larr; Kembali ke Dashboard</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 relative z-10">
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 id="form-berita-title" class="text-lg font-semibold mb-4">Publikasikan Berita Baru</h2>
+            <form id="form-berita" class="space-y-4">
+                <input type="hidden" id="berita-id">
+                <div>
+                    <label for="berita-judul" class="block text-sm font-medium text-gray-700">Judul Berita</label>
+                    <input type="text" id="berita-judul" placeholder="Judul Berita" class="mt-1 w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                <div>
+                    <label for="berita-tanggal" class="block text-sm font-medium text-gray-700">Tanggal Publikasi</label>
+                    <input type="date" id="berita-tanggal" class="mt-1 w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                <div>
+                    <label for="summernote" class="block text-sm font-medium text-gray-700">Isi Berita Lengkap</label>
+                    <textarea id="summernote" name="editordata"></textarea>
+                </div>
+                <div>
+                    <label for="berita-gambar" class="block text-sm font-medium text-gray-700">Gambar Utama</label>
+                    <input type="file" id="berita-gambar" class="mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50" accept="image/png, image/jpeg">
+                    <img id="gambar-preview" src="" class="hidden w-32 h-auto mt-2 rounded">
+                    <p class="text-xs text-gray-500 mt-1">Kosongkan jika tidak ingin mengubah gambar saat mengedit.</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button type="submit" id="submit-berita" class="w-full px-4 py-2 font-semibold text-white bg-emerald-400 rounded-lg hover:bg-emerald-600 disabled:bg-gray-400">Publikasikan Berita</button>
+                    <button type="button" id="cancel-edit-berita" class="hidden w-full px-4 py-2 font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300">Batal Edit</button>
+                </div>
+            </form>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+             <h2 class="text-lg font-semibold mb-4">Daftar Berita</h2>
+             <div id="daftar-berita" class="space-y-2">Memuat daftar berita...</div>
+        </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-storage.js";
+
+        const firebaseConfig = {
+  apiKey: "AIzaSyCN5vDFv2vHHwIDN6aLezQcsDSyIEvdWpM",
+  authDomain: "wreda-assalam.firebaseapp.com",
+  projectId: "wreda-assalam",
+  storageBucket: "wreda-assalam.firebasestorage.app",
+  messagingSenderId: "1051904934369",
+  appId: "1:1051904934369:web:2047f406dad5d1958fd2a0",
+  measurementId: "G-S2L0JK0J98"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.replace('admin.html');
+            }
+        });
+
+        $('#summernote').summernote({
+            placeholder: 'Tulis isi berita lengkap di sini...',
+            tabsize: 2,
+            height: 250,
+            toolbar: [['style', ['bold', 'italic', 'underline']],['para', ['ul', 'ol']],['insert', ['link']]]
+        });
+
+        const formBerita = document.getElementById('form-berita');
+        const daftarBeritaContainer = document.getElementById('daftar-berita');
+        const beritaIdInput = document.getElementById('berita-id');
+        const formTitle = document.getElementById('form-berita-title');
+        const submitButton = document.getElementById('submit-berita');
+        const cancelEditButton = document.getElementById('cancel-edit-berita');
+        const gambarPreview = document.getElementById('gambar-preview');
+        const beritaJudulInput = document.getElementById('berita-judul');
+        const beritaTanggalInput = document.getElementById('berita-tanggal');
+        const beritaGambarInput = document.getElementById('berita-gambar');
+        
+        function resetForm() {
+            formBerita.reset();
+            beritaIdInput.value = '';
+            $('#summernote').summernote('code', '');
+            formTitle.textContent = 'Publikasikan Berita Baru';
+            submitButton.textContent = 'Publikasikan Berita';
+            cancelEditButton.classList.add('hidden');
+            gambarPreview.classList.add('hidden');
+            beritaGambarInput.required = true;
+        }
+
+        async function loadDaftarBerita() {
+            daftarBeritaContainer.innerHTML = 'Memuat...';
+            const q = query(collection(db, "berita"), orderBy("createdAt", "desc"));
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.empty) {
+                daftarBeritaContainer.innerHTML = '<p class="text-gray-500">Belum ada berita.</p>';
+                return;
+            }
+            
+            daftarBeritaContainer.innerHTML = '';
+            const table = document.createElement('table');
+            table.className = 'w-full text-left';
+            const thead = document.createElement('thead');
+            thead.className = 'border-b-2';
+            thead.innerHTML = '<tr><th class="py-2 px-4">Judul</th><th class="py-2 px-4">Tanggal</th><th class="py-2 px-4 text-right">Aksi</th></tr>';
+            const tbody = document.createElement('tbody');
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const tr = document.createElement('tr');
+                tr.className = 'border-b';
+                
+                const tdJudul = document.createElement('td');
+                tdJudul.className = 'py-2 px-4';
+                tdJudul.textContent = data.judul;
+                
+                const tdTanggal = document.createElement('td');
+                tdTanggal.className = 'py-2 px-4';
+                tdTanggal.textContent = data.tanggal;
+
+                const tdAksi = document.createElement('td');
+                tdAksi.className = 'py-2 px-4 text-right';
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'edit-berita-btn text-blue-500 hover:underline mr-2';
+                editBtn.textContent = 'Edit';
+                editBtn.addEventListener('click', () => editBerita(doc.id));
+                
+                const hapusBtn = document.createElement('button');
+                hapusBtn.className = 'hapus-berita-btn text-red-500 hover:underline';
+                hapusBtn.textContent = 'Hapus';
+                hapusBtn.addEventListener('click', () => hapusBerita(doc.id));
+                
+                tdAksi.appendChild(editBtn);
+                tdAksi.appendChild(hapusBtn);
+                tr.appendChild(tdJudul);
+                tr.appendChild(tdTanggal);
+                tr.appendChild(tdAksi);
+                tbody.appendChild(tr);
+            });
+            
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            daftarBeritaContainer.appendChild(table);
+        }
+
+        async function editBerita(id) {
+            const docRef = doc(db, "berita", id);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                beritaIdInput.value = id;
+                beritaJudulInput.value = data.judul;
+                beritaTanggalInput.value = new Date(data.createdAt.toDate()).toISOString().split('T')[0];
+                $('#summernote').summernote('code', data.isiLengkap);
+                gambarPreview.src = data.gambarUrl;
+                gambarPreview.classList.remove('hidden');
+                
+                formTitle.textContent = 'Edit Berita';
+                submitButton.textContent = 'Simpan Perubahan';
+                cancelEditButton.classList.remove('hidden');
+                beritaGambarInput.required = false;
+                window.scrollTo(0, 0);
+            }
+        }
+
+        async function hapusBerita(id) {
+            if (confirm("Yakin ingin menghapus berita ini?")) {
+                try {
+                    const docRef = doc(db, "berita", id);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        // Coba hapus gambar dari storage
+                        try {
+                            const storageRef = ref(storage, docSnap.data().gambarUrl);
+                            await deleteObject(storageRef);
+                        } catch (error) {
+                            // Abaikan jika file tidak ditemukan, tapi log error lain
+                            if (error.code !== 'storage/object-not-found') {
+                                console.error("Gagal hapus gambar di storage:", error);
+                            }
+                        }
+                    }
+                    // Hapus dokumen dari Firestore
+                    await deleteDoc(docRef);
+                    alert("Berita berhasil dihapus.");
+                    loadDaftarBerita();
+                } catch (error) {
+                    console.error("Gagal menghapus berita:", error);
+                    alert("Terjadi kesalahan saat menghapus berita.");
+                }
+            }
+        }
+
+        cancelEditButton.addEventListener('click', resetForm);
+
+        formBerita.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitButton.disabled = true;
+            submitButton.textContent = 'Memproses...';
+
+            const id = beritaIdInput.value;
+            const file = beritaGambarInput.files[0];
+            const tanggalInput = beritaTanggalInput.value;
+            // Konversi tanggal ke format 'dd NamaBulan yyyy'
+            const tanggal = new Date(tanggalInput).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+            const data = {
+                judul: beritaJudulInput.value,
+                tanggal, // Gunakan format tanggal yang sudah dilokalkan
+                isiLengkap: $('#summernote').summernote('code'),
+                createdAt: serverTimestamp() // Tetap gunakan server timestamp untuk pengurutan
+            };
+
+            const saveToFirestore = async (imageUrl) => {
+                data.gambarUrl = imageUrl;
+                try {
+                    if (id) {
+                        // Saat update, jangan ganti createdAt agar urutan tidak berubah
+                        delete data.createdAt; 
+                        await setDoc(doc(db, "berita", id), data, { merge: true });
+                        alert('Berita berhasil diperbarui!');
+                    } else {
+                        await addDoc(collection(db, "berita"), data);
+                        alert('Berita berhasil dipublikasikan!');
+                    }
+                    resetForm();
+                    loadDaftarBerita();
+                } catch (error) {
+                    console.error("Gagal menyimpan ke Firestore:", error);
+                    alert("Gagal menyimpan data berita.");
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = id ? 'Simpan Perubahan' : 'Publikasikan Berita';
+                }
+            };
+
+            if (file) { // Jika ada file baru diunggah
+                const storagePath = `berita/${Date.now()}_${file.name}`;
+                const storageRef = ref(storage, storagePath);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                         submitButton.textContent = `Mengunggah... ${Math.round(progress)}%`;
+                    }, 
+                    (error) => {
+                        console.error("Upload gagal:", error);
+                        alert("Gagal mengunggah gambar.");
+                        submitButton.disabled = false;
+                        submitButton.textContent = id ? 'Simpan Perubahan' : 'Publikasikan Berita';
+                    }, 
+                    () => {
+                        // Dapatkan URL download dan simpan
+                        getDownloadURL(uploadTask.snapshot.ref).then(saveToFirestore);
+                    }
+                );
+            } else if (id) { // Jika sedang mengedit dan tidak ada file baru
+                // Dapatkan URL gambar lama dan simpan kembali
+                const docRef = doc(db, "berita", id);
+                const docSnap = await getDoc(docRef);
+                saveToFirestore(docSnap.data().gambarUrl);
+            } else {
+                 // Jika membuat baru tapi tidak ada file
+                 alert('Silakan pilih file gambar untuk berita baru.');
+                 submitButton.disabled = false;
+                 submitButton.textContent = 'Publikasikan Berita';
+            }
+        });
+
+        // --- INITIAL LOAD ---
+        loadDaftarBerita();
+        resetForm();
+    </script>
+</body>
+</html>

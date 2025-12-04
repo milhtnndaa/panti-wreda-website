@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tentang Kami - Panti Wreda Assalam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981', // Emerald 500
+                        'primary-dark': '#059669', // Emerald 600
+                        'primary-light': '#ECFDF5', // Emerald 50
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Navigasi aktif untuk header hijau */
+        .nav-active { color: white; font-weight: 600; border-bottom: 2px solid white; }
+        
+        /* Pola Mega Mendung dari gambar yang disediakan */
+        .megamendung-background {
+            background-image: url('10199570.jpg'); /* Menggunakan gambar yang Anda sediakan */
+            background-repeat: repeat;
+            background-size: 250px auto;
+            background-attachment: fixed;
+            opacity: 0.1;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #ECFDF5;
+        }
+
+        /* Overlay untuk section-section tertentu */
+        .content-section-bg {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(2px);
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Styling untuk konten dari editor WYSIWYG */
+        .prose h1, .prose h2, .prose h3 { font-weight: 700; margin-top: 1.5em; margin-bottom: 0.5em; }
+        .prose p { margin-bottom: 1rem; line-height: 1.75; }
+        .prose ul, .prose ol { margin-left: 1.5rem; margin-bottom: 1rem; list-style-position: outside; }
+        .prose a { color: #10B981; text-decoration: underline; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 relative"> 
+    <div class="megamendung-background"></div>
+
+    <header class="bg-primary sticky top-0 z-50 shadow-lg">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="landing-page.html" class="text-xl font-bold text-white">Panti Wreda Assalam</a>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="landing-page.html#beranda" class="text-gray-200 hover:text-white transition-colors duration-300">Beranda</a>
+                <a href="tentang-kami.html" class="nav-link text-white font-semibold border-b-2 border-white">Tentang Kami</a>
+                <a href="laporan-rinci.html" class="text-gray-200 hover:text-white transition-colors duration-300">Laporan Donasi</a>
+                <a href="berita.html" class="text-gray-200 hover:text-white transition-colors duration-300">Berita</a>
+                <a href="galeri.html" class="text-gray-200 hover:text-white transition-colors duration-300">Galeri</a>
+                <a href="landing-page.html#kontak" class="text-gray-200 hover:text-white transition-colors duration-300">Kontak</a>
+            </div>
+            <a href="landing-page.html#donasi" class="hidden md:block bg-white text-primary px-5 py-2 rounded-full font-semibold hover:bg-gray-100 transition-all duration-300 transform hover:scale-105">Donasi Sekarang</a>
+            </nav>
+    </header>
+
+    <main class="relative z-10 container mx-auto px-6 py-12">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl font-bold text-gray-800">Mengenal Panti Wreda Assalam</h1>
+                <p class="text-lg text-gray-600 mt-2">Rumah yang hangat dan penuh kasih sayang bagi para lansia di masa senja mereka.</p>
+            </div>
+
+            <div id="content-container" class="bg-white p-8 rounded-lg shadow-xl prose max-w-none content-section-bg">
+                <p id="loading-content" class="text-center text-gray-500">Memuat konten...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="relative z-10 bg-primary-dark text-white py-8 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 Panti Wreda Assalam. Semua Hak Cipta Dilindungi.</p>
+        </div>
+    </footer>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+  apiKey: "AIzaSyCN5vDFv2vHHwIDN6aLezQcsDSyIEvdWpM",
+  authDomain: "wreda-assalam.firebaseapp.com",
+  projectId: "wreda-assalam",
+  storageBucket: "wreda-assalam.firebasestorage.app",
+  messagingSenderId: "1051904934369",
+  appId: "1:1051904934369:web:2047f406dad5d1958fd2a0",
+  measurementId: "G-S2L0JK0J98"
+};
+
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const contentContainer = document.getElementById('content-container');
+        const loadingEl = document.getElementById('loading-content');
+
+        async function loadContent() {
+            try {
+                const docRef = doc(db, "profilPanti", "kontenUtama");
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    contentContainer.innerHTML = ''; // Hapus pesan "Memuat..."
+
+                    // Bagian Sejarah
+                    const divSejarah = document.createElement('div');
+                    divSejarah.className = 'grid md:grid-cols-2 gap-12 items-center not-prose mb-12';
+                    
+                    const divTeksSejarah = document.createElement('div');
+                    const h2Sejarah = document.createElement('h2');
+                    h2Sejarah.className = 'text-2xl font-bold text-gray-800 mb-4';
+                    h2Sejarah.textContent = 'Sejarah Singkat';
+                    const contentSejarah = document.createElement('div');
+                    contentSejarah.className = 'prose max-w-none text-gray-600 leading-relaxed';
+                    contentSejarah.innerHTML = data.sejarah || '<p>Konten sejarah belum diisi oleh admin.</p>';
+                    divTeksSejarah.appendChild(h2Sejarah);
+                    divTeksSejarah.appendChild(contentSejarah);
+                    
+                    const imgSejarah = document.createElement('img');
+                    imgSejarah.src = data.gambarUrl || 'https://placehold.co/600x400/ccc/999?text=Gambar+Belum+Diunggah';
+                    imgSejarah.alt = 'Foto bangunan panti';
+                    imgSejarah.className = 'rounded-lg shadow-md w-full h-80 object-cover';
+                    imgSejarah.onerror = () => { imgSejarah.src = 'https://placehold.co/600x400/ccc/999?text=Gagal+Muat'; };
+
+                    divSejarah.appendChild(divTeksSejarah);
+                    divSejarah.appendChild(imgSejarah);
+                    contentContainer.appendChild(divSejarah);
+
+                    // Bagian Visi & Misi
+                    const divVisiMisi = document.createElement('div');
+                    const h2VisiMisi = document.createElement('h2');
+                    h2VisiMisi.className = 'text-2xl font-bold text-center text-gray-800 mb-8';
+                    h2VisiMisi.textContent = 'Visi & Misi';
+                    
+                    const contentVisiMisi = document.createElement('div');
+                    contentVisiMisi.className = 'prose max-w-none text-gray-700';
+                    contentVisiMisi.innerHTML = data.visimisi || '<p>Konten visi & misi belum diisi oleh admin.</p>';
+
+                    divVisiMisi.appendChild(h2VisiMisi);
+                    divVisiMisi.appendChild(contentVisiMisi);
+                    contentContainer.appendChild(divVisiMisi);
+
+                } else {
+                    loadingEl.textContent = 'Konten "Tentang Kami" belum diatur oleh admin.';
+                }
+            } catch (error) {
+                console.error("Gagal memuat konten:", error);
+                loadingEl.textContent = 'Gagal memuat konten. Silakan coba lagi nanti.';
+                loadingEl.classList.add('text-red-500');
+            }
+        }
+
+        loadContent();
+    </script>
+</body>
+</html>
