@@ -496,7 +496,7 @@
                 payButton.disabled = true;
                 payButton.textContent = 'Memproses...';
                 try {
-                    const response = await fetch('https://panti-backend-api.onrender.com/create-invoice', {
+                    const response = await fetch('https://panti-backend-api.onrender.com', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
@@ -525,4 +525,5 @@
         });
     </script>
 </body>
+
 </html>
